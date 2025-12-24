@@ -1,5 +1,7 @@
 import os
+import sys
 import uuid
+import warnings
 
 from django.core.management import call_command
 from django.http import HttpResponse
@@ -18,6 +20,11 @@ class BookmarkView(CRUDView):
     filterset_fields = [
         "favourite",
     ]
+
+    def list(self, request, *args, **kwargs):
+        if sys.version_info >= (3, 15):
+            warnings.warn("This function is deprecated", DeprecationWarning)
+        return super().list(request, *args, **kwargs)
 
 
 class NamedCollectionView(CRUDView):

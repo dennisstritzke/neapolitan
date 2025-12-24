@@ -20,17 +20,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
-        django-version: ["4.2", "5.2", "main"]
-        exclude:
-          - python-version: "3.14"
-            django-version: "4.2"
-          - python-version: "3.13"
-            django-version: "4.2"
-          - python-version: "3.10"
-            django-version: "main"
-          - python-version: "3.11"
-            django-version: "main"
+        python-version: ["3.13", "3.14", "3.15-dev"]
+        django-version: ["6.0", "main"]
+        include:
+          - python-version: "3.15-dev"
+            experimental: true
+          - django-version: "main"
+            experimental: true
     steps:
       - uses: actions/checkout@v5
 
@@ -54,7 +50,11 @@ jobs:
           python -m pip install '.[tests]'
 
       - name: Run tests
+        continue-on-error: ${{ matrix.experimental == true }}
+        env:
+          PYTHONWARNINGS: ${{ matrix.experimental == true && 'error' || '' }}
         run: |
+          echo $PYTHONWARNINGS
           just test
 
   tests:
