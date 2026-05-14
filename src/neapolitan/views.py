@@ -6,7 +6,7 @@ from django.forms import models as model_forms
 from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.template.response import TemplateResponse
-from django.urls import NoReverseMatch, path, reverse
+from django.urls import NoReverseMatch, include, path, reverse
 from django.utils.decorators import classonlymethod
 from django.utils.functional import classproperty
 from django.utils.translation import gettext as _
@@ -87,6 +87,8 @@ class Role(enum.Enum):
 
     def reverse(self, view, object=None):
         url_name = f"{view.url_base}-{self.url_name_component}"
+        if view.url_namespace:
+            url_name = f"{view.url_namespace}:{url_name}"
         url_kwarg = view.lookup_url_kwarg or view.lookup_field
         match self:
             case Role.LIST | Role.CREATE:
@@ -504,9 +506,18 @@ class CRUDView(View):
         """
         return cls.model._meta.model_name
 
+    @classproperty
+    def url_namespace(self):
+        return None
+
     @classonlymethod
     def get_urls(cls, roles=None):
         """Classmethod to generate URL patterns for the view."""
         if roles is None:
             roles = iter(Role)
-        return [role.get_url(cls) for role in roles]
+        urls = [role.get_url(cls) for role in roles]
+
+        if cls.url_namespace:
+            return [path("", include((urls, cls.url_namespace)))]
+
+        return urls
